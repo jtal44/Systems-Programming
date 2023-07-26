@@ -1,0 +1,63 @@
+/*
+Student name: Jaxon Talbert
+Student NetID: JRT524
+Compiler Used: Text Editor/Ubuntu/Oracle
+Program Description: Program 4 takes the image.dat file from Create File and prints each pair and then the letter/number equivalent pausing one second between each pair and its data.
+*/
+
+
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <dirent.h>
+#include <string.h>
+#include <time.h>
+
+#define BUF_SIZE 1024
+char buf[BUF_SIZE];
+FILE *file;
+size_t nread;
+
+//create struct pair
+struct Pair
+{
+	char letter;
+	short int number;
+	
+};
+
+int main(int argc, char *argv[])
+{
+	int bytes = 0;
+	//create instance of timespec
+	struct timespec time;
+	//set to delay one second
+	time.tv_sec = 1;
+	time.tv_nsec = 0;
+	//create instance of pair
+	struct Pair pair;
+	//open image.dat file
+	int file = open("image.dat", O_RDONLY);
+	if (file)
+	{	
+		//read from image.dat file	
+		while ((nread = read(file, &pair, sizeof(struct Pair))) > 0)
+		{
+			printf("(%d,%c) ", pair.number, pair.letter);
+			//while int < number from pair print one letter
+			for (int i = 0; i < pair.number; i++)
+			{
+				printf("%c", pair.letter);
+			} 
+			printf("\n");
+			//wait one second
+			nanosleep(&time, NULL);
+		}
+	}
+	exit(EXIT_SUCCESS);
+}
