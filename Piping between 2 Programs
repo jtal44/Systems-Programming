@@ -1,0 +1,65 @@
+/*
+Student name: Jaxon Talbert
+Student NetID: JRT524
+Compiler Used: Text Editor/Ubuntu/Oracle
+Program Description: The following program uses a pipe to transfer a string between 2 programs.
+*/
+
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define BUF_SIZE 1024
+
+int main()
+{
+	int fd;
+	char answer[BUF_SIZE];
+	pid_t childPID;
+	
+	//mkfifo FIFOval
+	mkfifo("FIFOval", S_IRWXU);
+	
+	childPID = fork();
+	
+	switch(childPID)
+	{
+		//fork error
+		case -1:
+			perror("fork");
+			exit(EXIT_FAILURE);
+  	
+  		//used to execute Prog9-3
+  		case 0:
+	  		if (execlp("./Prog9-3", "./Prog9-3", NULL) == -1)
+			{
+				perror("execution");
+				exit(EXIT_FAILURE);
+			}
+  	
+  		
+  		default:
+  			//opens FIFOval
+	  		fd = open("FIFOval", O_WRONLY);
+
+			//print prompt statement
+			printf("Please enter text at the parent: ");
+			//read in answer until a \n
+			scanf("%[^\n]", answer);
+					
+			//write to answer to pipe
+			write(fd, answer, strlen(answer) + 1);
+			
+			//reprint of the data
+			printf("Producer: %s\n", answer);
+		
+			close(fd);
+			exit(EXIT_SUCCESS);
+  	}
+}
