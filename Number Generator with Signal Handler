@@ -1,0 +1,202 @@
+/*
+Student name: Jaxon Talbert
+Student NetID: JRT524
+Compiler Used: Text Editor/Ubuntu/Oracle
+Program Description: Program 6 uses two signal handlers generate random numbers and add to a counter if that number is in a certain range. 
+*/
+
+
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <dirent.h>
+#include <string.h>
+#include <time.h>
+#include <signal.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+
+#define BUF_SIZE 1024
+char buf[BUF_SIZE];
+static int timedOut;
+int xCount;
+int yCount;
+pid_t childPID;
+pid_t parentPID;
+
+
+//signal handler for parent
+void parentHandler(int sig)
+{	
+	if (sig == SIGCHLD)
+	{	
+		childPID = wait(NULL);
+			if (childPID == -1)
+			{
+				if (errno == ECHILD)
+				{
+					//last child stopped
+					exit(EXIT_SUCCESS);
+				}
+			}
+			
+			else
+			{
+				perror("wait");
+				exit(EXIT_FAILURE);
+			}
+		
+	}
+	
+	if (sig == SIGUSR1)
+	{
+		//increase x count and output message
+		xCount++;
+		printf("The child has generated %d values less than 25.\n", xCount);
+		return;
+	}
+	
+	if (sig == SIGUSR2)
+	{
+		//increase y count and output message
+		yCount++;
+		printf("The child has generated %d values greater than 75.\n", yCount);
+		return;
+	}
+	
+	if (sig == SIGINT)
+	{
+		//Ask if you want to exit
+		char *question = "\nExit? Y/n ";
+		char answer[BUF_SIZE];
+		//write to stdout
+		write(STDOUT_FILENO, question, strlen(question));
+		//read from stdin
+		read(STDIN_FILENO, answer, BUF_SIZE);
+		//check if Y was entered if so exit
+		if (strncmp(answer, "Y", 1) == 0)
+		{
+			exit(EXIT_SUCCESS);
+		}
+		
+		//return if Y wasn't entered
+		return;
+	}
+}	
+
+//create child handler
+void childHandler(int sig)
+{	
+	
+	if (sig == SIGTERM)
+	{
+		printf("No children remain");
+		exit(EXIT_SUCCESS);
+	}
+}
+
+
+int main(int argc, char *argv[])
+{
+	//create signal and timer structure
+	struct sigaction sac;
+	struct sigaction sap;
+	parentPID = getpid();
+	srand(time(NULL));
+
+	//create mask
+	sigemptyset(&sap.sa_mask);
+	sigemptyset(&sac.sa_mask);
+
+	//create handler
+	sap.sa_handler = parentHandler;
+	sap.sa_flags = 0;
+	sac.sa_handler = childHandler;
+	sac.sa_flags = 0;
+	
+	//sigchld error
+	if (sigaction(SIGCHLD, &sap, NULL) == -1)
+	{
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+	
+	//sigusr1 error
+	if (sigaction(SIGUSR1, &sap, NULL) == -1)
+	{
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+	
+	//sigusr2 error
+	if (sigaction(SIGUSR2, &sap, NULL) == -1)
+	{
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+	
+
+	switch(childPID = fork())
+	{
+		case -1:
+		perror("fork");
+		exit(EXIT_FAILURE);
+		
+		case 0:
+		//in child
+		sigaddset(&sac.sa_mask, SIGINT);
+		sigprocmask(SIG_BLOCK, &sac.sa_mask, NULL);
+		if (sigaction(SIGTERM, &sac, NULL) == -1)
+		{
+			perror("sigaction");
+			exit(EXIT_FAILURE);
+		}
+		while (1)
+		{
+			int random = rand() % 101;
+			if (random < 25)
+			{
+				//call SIGUSR1
+				kill(parentPID, SIGUSR1);
+				//sigaction(SIGUSR1, &sa, NULL);
+				//signal(SIGUSR1, signalHandler);
+			}
+			
+			if (random > 75)
+			{
+				//call SIGUSR2
+				kill(parentPID, SIGUSR2);
+				//signal(SIGUSR2, signalHandler);
+			}
+			
+			if (random > 48 && random < 51)
+			{
+				break;
+			}
+			
+			struct timespec time;
+			//set to delay 15 seconds
+			time.tv_sec = 15;
+			time.tv_nsec = 0;
+			nanosleep(&time, NULL);
+	
+	
+	
+			//exit(EXIT_SUCCESS);
+		}
+		exit(EXIT_SUCCESS);
+		
+		default:
+		//in parent
+		//wait on child to exit
+		while(1)
+		{
+			
+		}
+	}
+}
