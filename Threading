@@ -1,0 +1,120 @@
+/*
+Student name: Jaxon Talbert
+Student NetID: JRT524
+Compiler Used: Text Editor/Ubuntu/Oracle
+Program Description: The following program utilizes two threads to print even and odd numbers once per second until the values reach 60.
+*/
+
+
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <pthread.h>
+
+#define BUF_SIZE 1024
+
+void *threadStart1()
+{
+	struct timespec time;
+	//set to delay one second
+	time.tv_sec = 1;
+	time.tv_nsec = 0;
+	//create x for even numbers
+	int x = 0;
+	//while x is less than 61
+	while (x < 61)
+	{
+		//print x value and thread id 
+		printf("%d In function thread id = %lu\n", x, pthread_self());
+		//increment x 2
+		x = x + 2;
+		//sleep 1 sec
+		nanosleep(&time, NULL);
+	}
+	
+	//exit thread
+	pthread_exit(NULL);
+}
+
+void *threadStart2()
+{
+	struct timespec time;
+	//set to delay one second
+	time.tv_sec = 1;
+	time.tv_nsec = 0;
+	//y for odds
+	int y = 1;
+	//while y is less than 61
+	while (y < 61)
+	{
+		//print y value and thread id 
+		printf("%d In function thread id = %lu\n", y, pthread_self());
+		//increment y by 2
+		y = y + 2;
+		//sleep for 1 sec
+		nanosleep(&time, NULL);
+	}
+	
+	//exit thread
+	pthread_exit(NULL);
+	
+}
+
+int main()
+{
+	int s, u;
+	pthread_t t, v;
+	void *ret;
+	
+	//create thread 1 & 2
+	s = pthread_create(&t, NULL, threadStart1, NULL);
+	u = pthread_create(&v, NULL, threadStart2, NULL);
+	
+	if (s != 0)
+	{
+		errno = s;
+		printf("pthread create");
+		exit(EXIT_FAILURE);
+	}
+	
+	if (u != 0)
+	{
+		errno = u;
+		printf("pthread create");
+		exit(EXIT_FAILURE);
+	}
+	
+	//join threads
+	s = pthread_join(t, &ret);
+	u = pthread_join(v, &ret);
+	
+	if (s != 0)
+	{
+		errno = s;
+		printf("pthread join");
+		exit(EXIT_FAILURE);
+	}
+	
+	if (u != 0)
+	{
+		errno = u;
+		printf("pthread join");
+		exit(EXIT_FAILURE);
+	}
+	
+	free(ret);
+	//detach threads
+	pthread_detach(t);
+	pthread_detach(v);
+		
+	exit(EXIT_SUCCESS);
+}
+	
